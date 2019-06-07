@@ -193,3 +193,85 @@ export function udev_info(address) {
     }
     return pr;
 }
+
+const memoryRE = /^([ \w]+): (.*)/;
+
+// Process the dmidecode output and create a mapping of locator to DIMM properties
+function parseMemoryInfo(text) {
+    var info = {};
+    text.split("\n\n").map(paragraph => {
+        let locator = null;
+        let props = {};
+        paragraph = paragraph.trim();
+        if (!paragraph) {
+            return;
+        }
+        paragraph.split("\n").map(line => {
+            line = line.trim();
+            let match = line.match(memoryRE);
+            if (match) {
+                props[match[1]] = match[2];
+            }
+        });
+
+        locator = props["Locator"];
+        if (locator) {
+            info[locator] = props;
+        }
+    });
+    return processMemory(info);
+}
+
+// Select the useful properties to display
+
+function processMemory(info) {
+    let memoryArray = [];
+    let emptySlots = 0;
+
+    for (let dimm in info) {
+        let memoryProperty = info[dimm];
+        if (memoryProperty["Type Detail"] == "None") {
+            emptySlots = emptySlots + 1;
+        }
+        let memorySize = memoryProperty["Size"];
+        if (memorySize.includes("MB")) {
+            let memorySizeValue = parseInt(memorySize, 10);
+            memorySize = memorySizeValue / 1024 + " GB";
+        }
+
+        let memoryRank = memoryProperty["Rank"];
+        if (memoryRank == 1) memoryRank = "Single Rank";
+        if (memoryRank == 2) memoryRank = "Dual Rank";
+
+        memoryArray.push({
+            locator: memoryProperty["Locator"],
+            memoryTechnology: memoryProperty["Memory Technology"] == "<OUT OF SPEC>" ? "Unknown" : memoryProperty["Memory Technology"],
+            type: memoryProperty["Type"],
+            size: memorySize,
+            remainingRatedWriteEndurance: memoryProperty["Memory Technology"] == "Intel persistent memory" ? "100%" : "Unknown",
+            state: memoryProperty["Total Width"] == "Unknown" ? "Absent" : "Presence Detected",
+            rank: memoryRank,
+            speed: memoryProperty["Speed"]
+        });
+    }
+
+    return { "array": memoryArray, "emptySlots": emptySlots };
+}
+
+var memory_info_promises = {};
+
+export function memory_info(address) {
+    var pr = memory_info_promises[address];
+    var dfd;
+
+    if (!pr) {
+        dfd = cockpit.defer();
+        memory_info_promises[address] = pr = dfd.promise();
+        cockpit.spawn(["/usr/sbin/dmidecode", "-t", "memory"],
+                      { environ: ["LC_ALL=C"], err: "message", superuser: "try" })
+                .done(output => dfd.resolve(parseMemoryInfo(output)))
+                .fail(exception => dfd.reject(exception.message));
+    }
+
+    return pr;
+}
