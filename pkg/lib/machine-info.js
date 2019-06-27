@@ -275,3 +275,53 @@ export function memory_info(address) {
 
     return pr;
 }
+
+function parsePersistentMemoryInfo(text) {
+    console.log("Persistent Memory \n");
+    let textObject = JSON.parse(text);
+    let regionsArray = [];
+    // let namespaceArray = [];
+    let sizeRE = /\(([^)]+)\)/;
+    if (textObject.regions.length > 0) {
+        for (let region in textObject.regions) {
+            let pmRegionName = textObject.regions[region]["dev"];
+            let pmSize = textObject.regions[region]["size"].match(sizeRE)[1];
+            let pmType = textObject.regions[region]["type"];
+            let pmNamespaces = textObject.regions[region]["namespaces"];
+            let namespaceArray = [];
+            for (let namespace in pmNamespaces) {
+                namespaceArray.push({
+                    dev: pmNamespaces[namespace]["dev"],
+                });
+                // console.log(namespaceArray);
+            }
+            // console.log(namespaceArray);
+            regionsArray.push({
+                regionName: pmRegionName,
+                size: pmSize,
+                type: pmType,
+                nmspaces: namespaceArray,
+            });
+        }
+    }
+    console.log(regionsArray[0]['nmspaces'][0].dev);
+    return { "pmem_array": regionsArray };
+}
+
+var persistent_memory_info_promises = {};
+
+export function persistent_memory_info(address) {
+    var pr = persistent_memory_info_promises[address];
+    var dfd;
+
+    if (!pr) {
+        dfd = cockpit.defer();
+        persistent_memory_info_promises[address] = pr = dfd.promise();
+        cockpit.spawn(["/usr/bin/ndctl", "list", "-DHNRu"],
+                      { environ: ["LC_aLL=C"], err: "message", superuser: "try" })
+                .done(output => dfd.resolve(parsePersistentMemoryInfo(output)))
+                .fail(exception => dfd.reject(exception.message));
+    }
+
+    return pr;
+}

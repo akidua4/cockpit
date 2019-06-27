@@ -241,6 +241,13 @@ class HardwareInfo extends React.Component {
     render() {
         let pci = null;
         let memory = null;
+        let persistent_memory = null;
+
+        var navigateToItem = function(event) {
+            let source = "/system/hwinfo/" + event;
+            cockpit.jump(source, cockpit.transport.host);
+            return false;
+        };
 
         if (this.props.info.pci.length > 0) {
             let sortedPci = this.props.info.pci.concat();
@@ -266,6 +273,18 @@ class HardwareInfo extends React.Component {
             );
         }
 
+        if (this.props.info.persistent_memory.pmem_array.length > 0) {
+            persistent_memory = (
+                <Listing title={_("Persistent Memory") } columnTitles={ [_("Region Name"), _("Size")]} >
+                    { this.props.info.persistent_memory.pmem_array.map(region => {
+                        let regionList = null;
+                        regionList = <ListingRow columns={[region.regionName, region.size]} navigateToItem={navigateToItem.bind(this, region.regionName)} />;
+                        return regionList;
+                    })}
+                </Listing>
+            );
+        }
+
         return (
             <div className="page-ct container-fluid">
                 <CPUSecurityMitigationsDialog show={this.state.showCpuSecurityDialog} onClose={ () => this.setState({ showCpuSecurityDialog: false }) } />
@@ -280,6 +299,7 @@ class HardwareInfo extends React.Component {
 
                 { pci }
                 { memory }
+                { persistent_memory }
             </div>
         );
     }
