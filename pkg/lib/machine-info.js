@@ -285,6 +285,7 @@ export function memory_info(address) {
 }
 
 function parsePersistentMemoryInfo(text) {
+    if (text == "") return {};
     let textObject = JSON.parse(text);
     let regionsArray = [];
     let dimm_nspace_mapping = {};
@@ -338,15 +339,63 @@ var persistent_memory_info_promises = {};
 
 export function persistent_memory_info(address) {
     var pr = persistent_memory_info_promises[address];
-    var dfd;
 
     if (!pr) {
-        dfd = cockpit.defer();
-        persistent_memory_info_promises[address] = pr = dfd.promise();
-        cockpit.spawn(["/usr/bin/ndctl", "list", "-DHNRu"],
-                      { environ: ["LC_aLL=C"], err: "message", superuser: "try" })
-                .done(output => dfd.resolve(parsePersistentMemoryInfo(output)))
-                .fail(exception => dfd.reject(exception.message));
+        memory_info_promises[address] = pr = new Promise((resolve, reject) => {
+            cockpit.spawn(["/usr/bin/ndctl", "list", "-DHNRu"],
+                          { environ: ["LC_ALL=C"], err: "message", superuser: "try" })
+                    .done(output => resolve(parsePersistentMemoryInfo(output)))
+                    .fail(exception => reject(exception.message));
+        });
+    }
+
+    return pr;
+}
+
+function parseControllerInfo(text) {
+    if (text == "") return {};
+    let textObject = JSON.parse(text);
+    let controllerArray = [];    
+
+    if (textObject.Controllers[0]["Response Data"]["Number of Controllers"] == 0) {
+        return {};
+    } else {
+        let system_overview = textObject.Controllers[0]["Response Data"]["System Overview"];
+        for (let elem in system_overview) {
+            let contModel = system_overview[elem]["Model"];
+            let contPorts = system_overview[elem]["Ports"];
+            let contPd = system_overview[elem]["PDs"];
+            let contVd = system_overview[elem]["VDs"];
+            let contBbu = system_overview[elem]["BBU"] == "Msng" ? _("Missing") : system_overview[elem]["BBU"];
+            let contSpr = system_overview[elem]["sPR"];
+            let contHealth = system_overview[elem]["Hlth"] == "Opt" ? _("Optimal") : system_overview[elem]["BBU"];
+
+            controllerArray.push({
+                model: contModel,
+                ports: contPorts,
+                PD: contPd,
+                VD: contVd,
+                BBU: contBbu,
+                SPR: contSpr,
+                health: contHealth
+            });
+        }
+    }
+    return { "cont_array": controllerArray };
+}
+
+var controller_info_promises = {};
+
+export function controller_info(address) {
+    var pr = controller_info_promises[address];
+
+    if (!pr) {
+        memory_info_promises[address] = pr = new Promise((resolve, reject) => {
+            cockpit.spawn(["/opt/MegaRAID/perccli/perccli64", "show", "j"],
+                          { environ: ["LC_ALL=C"], err: "message", superuser: "try" })
+                    .done(output => resolve(parseControllerInfo(output)))
+                    .fail(exception => reject(exception.message));
+        });
     }
 
     return pr;

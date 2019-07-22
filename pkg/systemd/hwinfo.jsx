@@ -242,6 +242,7 @@ class HardwareInfo extends React.Component {
         let pci = null;
         let memory = null;
         let persistent_memory = null;
+        let controller = null;
 
         if (this.props.info.pci.length > 0) {
             let sortedPci = this.props.info.pci.concat();
@@ -262,17 +263,34 @@ class HardwareInfo extends React.Component {
                 </Listing>
             );
         }
+        if (!this.props.info.persistent_memory.pmem_array) persistent_memory = null;
+        else {
+            if (this.props.info.persistent_memory.pmem_array.length > 0) {
+                persistent_memory = (
+                    <Listing title={_("Persistent Memory") } columnTitles={ [_("Region Name"), _("Name Spaces"), _("DIMMS"), _("Size"), _("Type")]} >
+                        { this.props.info.persistent_memory.pmem_array.map(region => {
+                            let regionList = null;
+                            regionList = <ListingRow columns={[region.regionName, region.nmspaces, region.dimms, region.size, region.type]} />;
+                            return regionList;
+                        })}
+                    </Listing>
+                );
+            }
+        }
 
-        if (this.props.info.persistent_memory.pmem_array.length > 0) {
-            persistent_memory = (
-                <Listing title={_("Persistent Memory") } columnTitles={ [_("Region Name"), _("Name Spaces"), _("DIMMS"), _("Size"), _("Type")]} >
-                    { this.props.info.persistent_memory.pmem_array.map(region => {
-                        let regionList = null;
-                        regionList = <ListingRow columns={[region.regionName, region.nmspaces, region.dimms, region.size, region.type]} />;
-                        return regionList;
-                    })}
-                </Listing>
-            );
+        if (!this.props.info.controller.cont_array) controller = null;
+        else {
+            if (this.props.info.controller.cont_array.length > 0) {
+                controller = (
+                    <Listing title={_("RAID Controllers") } columnTitles={ [_("Model"), _("Ports"), _("Physical Drives"), _("Virtual Drives"), _("Battery Backup Units"), _("Scheduled Patrol Read"), _("Health")]} >
+                        { this.props.info.controller.cont_array.map(ctrl => {
+                            let ctrlList = null;
+                            ctrlList = <ListingRow columns={[ctrl.model, ctrl.ports, ctrl.PD, ctrl.VD, ctrl.BBU, ctrl.SPR, ctrl.health]} />;
+                            return ctrlList;
+                        })}
+                    </Listing>
+                );
+            }
         }
 
         return (
@@ -294,6 +312,7 @@ class HardwareInfo extends React.Component {
                     { memory }
                 </div>
                 { persistent_memory }
+                { controller }
             </div>
         );
     }
