@@ -409,12 +409,12 @@ function parseBiosInfo(text) {
 
     biosArray.push({
         bootMode: attr["BootMode"],
-        attemptFastBoot: attr["AttemptFastBoot"],
-        genericUsbBoot: attr["GenericUsbBoot"],
-        idracDebugMode: attr["IdracDebugMode"],
+        attemptFastBoot: attr["AttemptFastBoot"] ? attr["AttemptFastBoot"] : _("Not Available"),
+        genericUsbBoot: attr["GenericUsbBoot"] ? attr["GenericUsbBoot"] : _("Not Available"),
+        idracDebugMode: attr["IdracDebugMode"] ? attr["IdracDebugMode"] : _("Not Available"),
         memRefreshRate: attr["MemRefreshRate"],
         nvmemode: attr["NvmeMode"],
-        bootOrder: attr["SetBootOrderEn"],
+        bootOrder: attr["SetBootOrderEn"] ? attr["SetBootOrderEn"] : _("Not Available"),
         sysMemSpeed: attr["SysMemSpeed"],
         tpmSecurity: attr["TpmSecurity"],
         tpmInfo: attr["TpmInfo"]
@@ -431,7 +431,7 @@ export function bios_info(address) {
 
     if (!pr) {
         memory_info_promises[address] = pr = new Promise((resolve, reject) => {
-            cockpit.spawn(["curl", "--insecure", "--user", "root:Dell1234", "https://100.71.96.122/redfish/v1/Systems/System.Embedded.1/Bios"],
+            cockpit.spawn(["curl", "--insecure", "--user", "root:calvin", "https://100.71.96.75/redfish/v1/Systems/System.Embedded.1/Bios"],
                           { environ: ["LC_ALL=C"], err: "message", superuser: "try" })
                     .done(output => resolve(parseBiosInfo(output)))
                     .fail(exception => reject(exception.message));
