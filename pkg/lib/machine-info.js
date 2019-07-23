@@ -400,3 +400,43 @@ export function controller_info(address) {
 
     return pr;
 }
+
+function parseBiosInfo(text) {
+    if (text == "") return {};
+    let textObject = JSON.parse(text);
+    let biosArray = [];
+    let attr = textObject["Attributes"];
+
+    biosArray.push({
+        bootMode: attr["BootMode"],
+        attemptFastBoot: attr["AttemptFastBoot"],
+        genericUsbBoot: attr["GenericUsbBoot"],
+        idracDebugMode: attr["IdracDebugMode"],
+        memRefreshRate: attr["MemRefreshRate"],
+        nvmemode: attr["NvmeMode"],
+        bootOrder: attr["SetBootOrderEn"],
+        sysMemSpeed: attr["SysMemSpeed"],
+        tpmSecurity: attr["TpmSecurity"],
+        tpmInfo: attr["TpmInfo"]
+    });
+
+    console.log(biosArray);
+    return { "bios_array": biosArray };
+}
+
+var bios_info_promises = {};
+
+export function bios_info(address) {
+    var pr = bios_info_promises[address];
+
+    if (!pr) {
+        memory_info_promises[address] = pr = new Promise((resolve, reject) => {
+            cockpit.spawn(["curl", "--insecure", "--user", "root:Dell1234", "https://100.71.96.122/redfish/v1/Systems/System.Embedded.1/Bios"],
+                          { environ: ["LC_ALL=C"], err: "message", superuser: "try" })
+                    .done(output => resolve(parseBiosInfo(output)))
+                    .fail(exception => reject(exception.message));
+        });
+    }
+
+    return pr;
+}

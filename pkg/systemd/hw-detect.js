@@ -55,7 +55,7 @@ function findPCI(udevdb, info) {
 }
 
 export default function detect() {
-    let info = { system: {}, pci: [], memory: [], persistent_memory: {}, controller: {} };
+    let info = { system: {}, pci: [], memory: [], persistent_memory: {}, controller: {}, bios: {} };
     var tasks = [];
 
     tasks.push(new Promise((resolve, reject) => {
@@ -121,6 +121,18 @@ export default function detect() {
                 })
                 .catch(error => {
                     console.warn("Failed to get perccli information: ", error.toString());
+                    resolve();
+                });
+    }));
+
+    tasks.push(new Promise((resolve, reject) => {
+        machine_info.bios_info()
+                .then(result => {
+                    info.bios = result;
+                    resolve();
+                })
+                .catch(error => {
+                    console.warn("Failed to get bios information: ", error.toString());
                     resolve();
                 });
     }));

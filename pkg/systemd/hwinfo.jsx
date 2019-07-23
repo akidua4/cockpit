@@ -243,6 +243,7 @@ class HardwareInfo extends React.Component {
         let memory = null;
         let persistent_memory = null;
         let controller = null;
+        let redfish_bios = null;
 
         if (this.props.info.pci.length > 0) {
             let sortedPci = this.props.info.pci.concat();
@@ -293,6 +294,59 @@ class HardwareInfo extends React.Component {
             }
         }
 
+        if (!this.props.info.bios.bios_array) redfish_bios = null;
+        else {
+            if (this.props.info.bios.bios_array.length > 0) {
+                let elem = this.props.info.bios.bios_array[0];
+                redfish_bios = (
+                    <table className="info-table-ct wide-split-table-ct">
+                        <tbody>
+                            <tr>
+                                <th>{ _("Boot Mode") }</th>
+                                <td>{ elem.bootMode }</td>
+                            </tr>
+                            <tr>
+                                <th>{ _("Attempt Fast Boot") }</th>
+                                <td>{ elem.attemptFastBoot }</td>
+                            </tr>
+                            <tr>
+                                <th>{ _("Generic USB Boot") }</th>
+                                <td>{ elem.genericUsbBoot }</td>
+                            </tr>
+                            <tr>
+                                <th>{ _("IDRAC Debug Mode") }</th>
+                                <td>{ elem.idracDebugMode }</td>
+                            </tr>
+                            <tr>
+                                <th>{ _("TPM Info") }</th>
+                                <td>{ elem.tpmInfo }</td>
+                            </tr>
+                        </tbody>
+                        <tbody>
+                            <React.Fragment>
+                                <tr>
+                                    <th>{ _("Memory Refresh Rate") }</th>
+                                    <td>{ elem.memRefreshRate }</td>
+                                </tr>
+                                <tr>
+                                    <th>{ _("NVMeMode") }</th>
+                                    <td>{ elem.nvmemode }</td>
+                                </tr>
+                                <tr>
+                                    <th>{ _("Boot Order") }</th>
+                                    <td>{ elem.bootOrder }</td>
+                                </tr>
+                                <tr>
+                                    <th>{ _("System Memory Speed") }</th>
+                                    <td>{ elem.sysMemSpeed }</td>
+                                </tr>
+                            </React.Fragment>
+                        </tbody>
+                    </table>
+                );
+            }
+        }
+
         return (
             <div className="page-ct container-fluid">
                 <CPUSecurityMitigationsDialog show={this.state.showCpuSecurityDialog} onClose={ () => this.setState({ showCpuSecurityDialog: false }) } />
@@ -304,6 +358,9 @@ class HardwareInfo extends React.Component {
                 <h2>{ _("System Information") }</h2>
                 <SystemInfo info={this.props.info.system}
                             onSecurityClick={ this.state.mitigationsAvailable ? () => this.setState({ showCpuSecurityDialog: true }) : undefined } />
+
+                <h2>{_("BIOS Information")}</h2>
+                { redfish_bios}
 
                 <div id="pci-listing">
                     { pci }
