@@ -355,7 +355,7 @@ export function persistent_memory_info(address) {
 function parseControllerInfo(text) {
     if (text == "") return {};
     let textObject = JSON.parse(text);
-    let controllerArray = [];    
+    let controllerArray = [];
 
     if (textObject.Controllers[0]["Response Data"]["Number of Controllers"] == 0) {
         return {};
